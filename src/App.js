@@ -1,4 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
+import {
+  BrowserRouter as Router,
+  Switch,
+  Route,
+  Link,
+  useRouteMatch,
+  Redirect,
+  useHistory,
+} from 'react-router-dom';
 import Blog from './components/Blog';
 import Message from './components/Message';
 import blogService from './services/blogs';
@@ -6,34 +15,23 @@ import loginService from './services/login';
 import LoginForm from './components/LoginForm';
 import AddBlogForm from './components/AddBlogForm';
 import Togglable from './components/Togglable';
-import { Typography, Button, Box } from '@material-ui/core/';
+import ButtonAppBar from './components/ButtonAppBar';
+import { Box, Fab } from '@material-ui/core/';
+import AddIcon from '@material-ui/icons/Add';
 import { makeStyles } from '@material-ui/core/styles';
+import BlogDetails from './components/BlogDetails';
 
-const useStyles = makeStyles({
-  button: {
-    marginTop: 10,
-    marginBottom: 10,
+const useStyles = makeStyles((theme) => ({
+  fab: {
+    position: 'fixed',
+    top: theme.spacing(6),
+    right: theme.spacing(2),
   },
-  appheading: {
-    color: 'white',
-    backgroundColor: '#3f51b5',
-    padding: '10px',
+  navbar: {
+    position: 'fixed',
+    top: theme.spacing(0),
   },
-});
-
-const LogoutButton = ({ handleLogout }) => {
-  const classes = useStyles();
-  return (
-    <Button
-      className={classes.button}
-      color='primary'
-      variant='contained'
-      onClick={handleLogout}
-    >
-      Logout
-    </Button>
-  );
-};
+}));
 
 const App = () => {
   const [blogs, setBlogs] = useState([]);
@@ -41,6 +39,7 @@ const App = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [user, setUser] = useState(null);
+  //const [selectedBlog, setSelectedBlog] = useState(null);
 
   const addBlogFormRef = useRef();
 
@@ -103,6 +102,9 @@ const App = () => {
         content: 'removed blog',
         type: 'info',
       });
+      setTimeout(() => {
+        setInfoMessage(null);
+      }, 5000);
     } catch (exception) {
       setInfoMessage({
         content: 'wrong credentials',
@@ -138,30 +140,12 @@ const App = () => {
       }, 5000);
     }
   };
-
+  let history = useHistory();
   const handleLogout = () => {
     window.localStorage.clear();
     setUser(null);
+    history.push('/');
   };
-  const classes = useStyles();
-
-  if (user === null) {
-    return (
-      <Box maxWidth={300} m={2} mx='auto'>
-        <Typography variant='h4' className={classes.appheading}>
-          <strong>Simple Blog List</strong>
-        </Typography>
-        <Message msg={infoMessage} />
-        <LoginForm
-          username={username}
-          password={password}
-          handleUsernameChange={({ target }) => setUsername(target.value)}
-          handlePasswordChange={({ target }) => setPassword(target.value)}
-          handleLogin={handleLogin}
-        />
-      </Box>
-    );
-  }
 
   const blogForm = () => (
     <Togglable
@@ -173,31 +157,87 @@ const App = () => {
     </Togglable>
   );
 
+  const classes = useStyles();
+
+  const match = useRouteMatch('/blogs/:id');
+
+  console.log('blogs', blogs);
+  console.log('selected blog', window.localStorage.getItem('blog'));
+
+  const blog = match ? blogs.find((blog) => blog.id === match.params.id) : null;
+
+  blog != null && window.localStorage.setItem('blog', JSON.stringify(blog));
+
+  console.log('selected blog', window.localStorage.getItem('blog'));
+
   return (
-    <Box maxWidth={300} m={2} mx='auto'>
-      <Typography variant='h4' className={classes.appheading}>
-        <strong>Simple Blog List</strong>
-      </Typography>
-
-      <Typography variant='body1'>Logged in as {user.name}</Typography>
-      <LogoutButton handleLogout={handleLogout} />
-
-      {blogs
-        .sort((a, b) => b.likes - a.likes)
-        .map((blog) => (
-          <Blog
-            key={blog.id}
-            blog={blog}
-            deleteBlog={deleteBlog}
-            updateBlog={updateBlog}
-          />
-        ))}
-
+    <Box maxWidth={480} mt={0} mx='auto'>
+      <ButtonAppBar handleLogout={handleLogout} user={user ? user : null} />
       <Message msg={infoMessage} />
-      {blogForm()}
-      {/* <Togglable buttonLabel='add'>
-        <AddBlogForm createBlog={addBlog} />
-      </Togglable> */}
+      <Switch>
+        <Route path='/blogs/:id'>
+          <BlogDetails />
+        </Route>
+        <Route path='/blogs'>
+          {user === null ? (
+            <LoginForm
+              username={username}
+              password={password}
+              handleUsernameChange={({ target }) => setUsername(target.value)}
+              handlePasswordChange={({ target }) => setPassword(target.value)}
+              handleLogin={handleLogin}
+            />
+          ) : (
+            <div>
+              {blogs
+                .sort((a, b) => b.likes - a.likes)
+                .map((blog) => (
+                  <Blog
+                    key={blog.id}
+                    blog={blog}
+                    deleteBlog={deleteBlog}
+                    updateBlog={updateBlog}
+                  />
+                ))}
+
+              <Message msg={infoMessage} />
+              {blogForm()}
+            </div>
+          )}
+        </Route>
+        <Route path='/'>
+          <Redirect to='/blogs' />
+        </Route>
+      </Switch>
+
+      {/* {user === null ? (
+          <LoginForm
+            username={username}
+            password={password}
+            handleUsernameChange={({ target }) => setUsername(target.value)}
+            handlePasswordChange={({ target }) => setPassword(target.value)}
+            handleLogin={handleLogin}
+          />
+        ) : (
+          <div>
+            {blogs
+              .sort((a, b) => b.likes - a.likes)
+              .map((blog) => (
+                <Blog
+                  key={blog.id}
+                  blog={blog}
+                  deleteBlog={deleteBlog}
+                  updateBlog={updateBlog}
+                />
+              ))}
+
+            <Message msg={infoMessage} />
+            {blogForm()}
+          </div>
+        )} */}
+      <Fab color='primary' aria-label='add' className={classes.fab}>
+        <AddIcon />
+      </Fab>
     </Box>
   );
 };

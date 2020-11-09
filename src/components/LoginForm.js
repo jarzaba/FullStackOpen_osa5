@@ -20,10 +20,8 @@ const LoginForm = ({
   const classes = useStyles();
 
   return (
-    <Box maxWidth={300} m={1} mx='auto'>
-      <Typography variant='h6' color='primary'>
-        Log in to application
-      </Typography>
+    <Box mt={2}>
+      <Typography variant='h6'>Log in to application</Typography>
       <form onSubmit={handleLogin}>
         <TextField
           type='text'
@@ -46,6 +44,7 @@ const LoginForm = ({
         <Button
           className={classes.button}
           variant='contained'
+          color='primary'
           type='submit'
           id='login-button'
           fullWidth
